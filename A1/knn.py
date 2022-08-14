@@ -59,7 +59,11 @@ def compute_distances_two_loops(x_train, x_test):
   # functions from torch.nn or torch.nn.functional.                            #
   ##############################################################################
   # Replace "pass" statement with your code
-  pass
+  train_reshape = x_train.reshape(num_train, -1)
+  test_reshape = x_test.reshape(num_test, -1)
+  for i in range(num_train):
+    for j in range(num_test):
+      dists[i][j] = torch.sum((train_reshape[i] - test_reshape[j]) ** 2)
   ##############################################################################
   #                             END OF YOUR CODE                               #
   ##############################################################################
@@ -102,7 +106,10 @@ def compute_distances_one_loop(x_train, x_test):
   # functions from torch.nn or torch.nn.functional.                            #
   ##############################################################################
   # Replace "pass" statement with your code
-  pass
+  train_reshape = x_train.reshape(num_train, -1)
+  test_reshape = x_test.reshape(num_test, -1)
+  for i in range(num_test):
+    dists[:, i] = torch.sum((train_reshape - test_reshape[i]) ** 2, dim = 1)
   ##############################################################################
   #                             END OF YOUR CODE                               #
   ##############################################################################
@@ -151,7 +158,13 @@ def compute_distances_no_loops(x_train, x_test):
   #       and a matrix multiply.                                               #
   ##############################################################################
   # Replace "pass" statement with your code
-  pass
+  train_reshape = x_train.reshape(num_train, -1)
+  test_reshape = x_test.reshape(num_test, -1)
+  dists = train_reshape.mm(torch.t(test_reshape))
+  sqr_a = torch.sum(train_reshape ** 2, dim=1).view(-1, 1)
+  sqr_b = torch.sum(test_reshape.t() ** 2, dim=0).view(1, -1)
+  print(sqr_a.shape, sqr_b.shape)
+  dists = -2 * dists + sqr_a + sqr_b
   ##############################################################################
   #                             END OF YOUR CODE                               #
   ##############################################################################
@@ -191,7 +204,9 @@ def predict_labels(dists, y_train, k=1):
   # samples. Hint: Look up the function torch.topk                             #
   ##############################################################################
   # Replace "pass" statement with your code
-  pass
+  idx = torch.topk(dists, k, dim=0, largest=False).indices.t()
+  for i in range(num_test):
+    y_pred[i] = torch.mode(y_train[idx[i]]).values.item()
   ##############################################################################
   #                             END OF YOUR CODE                               #
   ##############################################################################
@@ -213,7 +228,8 @@ class KnnClassifier:
     # computation and simply memorize the training data.                      #
     ###########################################################################
     # Replace "pass" statement with your code
-    pass
+    self.X = x_train
+    self.y = y_train
     ###########################################################################
     #                           END OF YOUR CODE                              #
     ###########################################################################
@@ -237,7 +253,8 @@ class KnnClassifier:
     # output labels.
     ###########################################################################
     # Replace "pass" statement with your code
-    pass
+    dists = compute_distances_no_loops(self.X, x_test)
+    y_test_pred = predict_labels(dists, self.y, k)
     ###########################################################################
     #                           END OF YOUR CODE                              #
     ###########################################################################
@@ -299,7 +316,8 @@ def knn_cross_validate(x_train, y_train, num_folds=5, k_choices=None):
   # Hint: torch.chunk                                                          #
   ##############################################################################
   # Replace "pass" statement with your code
-  pass
+  x_train_folds = x_train.chunk(num_folds)
+  y_train_folds = y_train.chunk(num_folds)
   ##############################################################################
   #                            END OF YOUR CODE                                #
   ##############################################################################
@@ -318,7 +336,15 @@ def knn_cross_validate(x_train, y_train, num_folds=5, k_choices=None):
   # values in k in k_to_accuracies.   HINT: torch.cat                          #
   ##############################################################################
   # Replace "pass" statement with your code
-  pass
+  for k in k_choices:
+    k_to_accuracies[k] = []
+    for i in range(num_folds):
+      x_test = x_train_folds[i]
+      y_test = y_train_folds[i]
+      x_train_new = torch.cat(x_train_folds[:i] + x_train_folds[i+1:])
+      y_train_new = torch.cat(y_train_folds[:i] + y_train_folds[i+1:])
+      classifier = KnnClassifier(x_train_new, y_train_new)
+      k_to_accuracies[k].append(classifier.check_accuracy(x_test, y_test, k))
   ##############################################################################
   #                            END OF YOUR CODE                                #
   ##############################################################################
@@ -348,7 +374,12 @@ def knn_get_best_k(k_to_accuracies):
   # the value of k that has the highest mean accuracy accross all folds.       #
   ##############################################################################
   # Replace "pass" statement with your code
-  pass
+  max_acc = 0
+  for k, v in k_to_accuracies.items():
+    cur_acc = sum(v)
+    if max_acc < cur_acc:
+      max_acc = cur_acc
+      best_k = k
   ##############################################################################
   #                            END OF YOUR CODE                                #
   ##############################################################################
