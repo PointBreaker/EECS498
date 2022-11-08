@@ -47,7 +47,17 @@ def compute_saliency_maps(X, y, model):
   # Hint: X.grad.data stores the gradients                                     #
   ##############################################################################
   # Replace "pass" statement with your code
-  pass
+
+  # Compute the forward pass and get loss
+  y_hat = model(X)
+  loss = torch.nn.functional.cross_entropy(y_hat, y)
+  
+  # Compute the backward pass and get absolute value of gradients
+  loss.backward()
+  saliency = X.grad.data.abs()
+
+  # reduction using max through each channel
+  saliency = saliency.max(dim=1)[0]
   ##############################################################################
   #               END OF YOUR CODE                                             #
   ##############################################################################
@@ -88,7 +98,30 @@ def make_adversarial_attack(X, target_y, model, max_iter=100, verbose=True):
   # You can print your progress over iterations to check your algorithm.       #
   ##############################################################################
   # Replace "pass" statement with your code
-  pass
+  target_y = torch.tensor([target_y], device=X_adv.device)
+  for i in range(max_iter):
+    # Compute the forward pass and get loss
+    y_hat = model(X_adv)
+    loss = torch.nn.functional.cross_entropy(y_hat, target_y)
+
+    # Compute the backward pass and get absolute value of gradients
+    loss.backward()
+    dX = learning_rate * X_adv.grad.data / torch.norm(X_adv.grad.data)
+    
+    # Update X_adv
+    X_adv.data -= dX
+
+    # Zero out the gradients
+    X_adv.grad.data.zero_()
+
+    if verbose:
+      print(f'Iteration {i}: target score = {target_y.item(), y_hat[0, target_y].item()},\
+         max score = {y_hat.argmax().item(), y_hat.max().item()}')
+    
+    # Check if the model is fooled
+    if y_hat.argmax().item() == target_y.item():
+      break
+
   ##############################################################################
   #                             END OF YOUR CODE                               #
   ##############################################################################
@@ -123,7 +156,22 @@ def class_visualization_step(img, target_y, model, **kwargs):
     # after each step.                                                     #
     ########################################################################
     # Replace "pass" statement with your code
-    pass
+    target_y = torch.tensor([target_y], device=img.device)
+
+    # Compute the forward pass and get loss
+    y_hat = model(img)
+    loss = torch.nn.functional.cross_entropy(y_hat, target_y)
+
+    # Compute the backward pass add L2 regularization
+    loss.backward()
+    dX = learning_rate * img.grad.data / torch.norm(img.grad.data) + l2_reg * img.data ** 2
+
+    # Update img
+    img.data -= dX
+
+    # Zero out the gradients
+    img.grad.data.zero_()
+
     ########################################################################
     #                             END OF YOUR CODE                         #
     ########################################################################
