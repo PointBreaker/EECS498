@@ -28,7 +28,14 @@ class ProposalModule(nn.Module):
     # Make sure that your region proposal module is called pred_layer
     self.pred_layer = None      
     # Replace "pass" statement with your code
-    pass
+    Cin, H, A = in_dim, hidden_dim, self.num_anchors
+    from collections import OrderedDict
+    self.pred_layer = nn.Sequential(OrderedDict([
+      ('conv1', nn.Conv2d(Cin, H, kernel_size=3, stride=1, padding=1)),
+      ('dropout', nn.Dropout(p=drop_ratio)),
+      ('relu', nn.LeakyReLU()),
+      ('conv2', nn.Conv2d(H, A*6, kernel_size=1, stride=1, padding=0))
+      ]))
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
