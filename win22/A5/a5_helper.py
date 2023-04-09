@@ -163,11 +163,11 @@ def train(
 ):
     print("Training started...")
     if warmup_interval is None:
-        optimizer = torch.optim.Adam(
+        optimizer = torch.optim.AdamW(
             model.parameters(), lr=lr, betas=(0.9, 0.995), eps=1e-9
         )
     else:
-        optimizer = torch.optim.Adam(
+        optimizer = torch.optim.AdamW(
             model.parameters(), lr=warmup_lr, betas=(0.9, 0.995), eps=1e-9
         )
     iteration = 0
